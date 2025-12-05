@@ -1,0 +1,162 @@
+# tfmodule-google-gce
+
+A Terraform module for creating and managing Google Compute Engine (GCE) instances with flexible configuration options including boot disk, data disks, networking, and resource tagging.
+
+## Features
+
+- **Flexible Instance Configuration**: Support for any machine type with customizable zone placement
+- **Boot Disk Management**: Configurable boot disk with custom image, size, and type (pd-standard, pd-ssd, pd-balanced)
+- **Data Disk Support**: Optional creation and attachment of multiple persistent data disks
+- **Network Configuration**: VPC/subnetwork integration with optional public IP and custom private IP assignment
+- **Network Tier Control**: Choose between PREMIUM or STANDARD network tiers for public IPs
+- **Resource Tagging**: Support for both network tags (firewall rules) and resource manager tags (organization)
+- **Dynamic Resource Creation**: Intelligent conditional creation of resources based on configuration
+- **Comprehensive Outputs**: Access to instance details, IP addresses, and data disk information
+
+## Usage
+
+### Basic Example
+```hcl
+module "gce_instance" {
+  source = "path/to/tfmodule-google-gce"
+
+  project_id   = "my-gcp-project"
+  machine_name = "web-server-01"
+  machine_type = "e2-medium"
+  zone         = "us-central1-a"
+
+  # Boot disk configuration
+  image          = "projects/debian-cloud/global/images/family/debian-11"
+  boot_disk_size = 20
+  boot_disk_type = "pd-balanced"
+
+  # Network configuration
+  network    = "projects/my-gcp-project/global/networks/vpc-network"
+  subnetwork = "projects/my-gcp-project/regions/us-central1/subnetworks/subnet-01"
+
+  # Optional: Enable public IP
+  enable_public_ip = true
+  network_tier     = "PREMIUM"
+}
+```
+
+### Instance with Data Disks
+```hcl
+module "gce_with_storage" {
+  source = "path/to/tfmodule-google-gce"
+
+  project_id   = "my-gcp-project"
+  machine_name = "database-server-01"
+  machine_type = "n2-standard-4"
+  zone         = "us-central1-a"
+
+  # Boot disk
+  image          = "projects/ubuntu-os-cloud/global/images/family/ubuntu-2204-lts"
+  boot_disk_size = 50
+  boot_disk_type = "pd-ssd"
+
+  # Data disks
+  data_disks = [
+    {
+      name = "data-disk-01"
+      type = "pd-ssd"
+      size = 100
+    },
+    {
+      name = "data-disk-02"
+      type = "pd-standard"
+      size = 500
+    }
+  ]
+
+  # Network configuration
+  network    = "projects/my-gcp-project/global/networks/vpc-network"
+  subnetwork = "projects/my-gcp-project/regions/us-central1/subnetworks/subnet-01"
+  network_ip = "10.0.1.10"
+
+  # Tags
+  network_tags = ["http-server", "https-server", "database"]
+  
+  resource_manager_tags = {
+    environment = "production"
+    team        = "platform"
+    cost-center = "engineering"
+  }
+}
+```
+
+### Private Instance with Custom Configuration
+```hcl
+module "private_instance" {
+  source = "path/to/tfmodule-google-gce"
+
+  project_id   = "my-gcp-project"
+  machine_name = "internal-app-01"
+  machine_type = "n1-standard-2"
+  zone         = "us-east1-b"
+
+  # Boot disk
+  image          = "projects/centos-cloud/global/images/family/centos-stream-9"
+  boot_disk_size = 30
+  boot_disk_type = "pd-balanced"
+
+  # Network configuration (private only)
+  network          = "projects/my-gcp-project/global/networks/vpc-private"
+  subnetwork       = "projects/my-gcp-project/regions/us-east1/subnetworks/subnet-private"
+  network_ip       = "10.10.1.50"
+  enable_public_ip = false
+
+  # Network tags for firewall rules
+  network_tags = ["internal-app", "allow-ssh-iap"]
+
+  # Resource manager tags
+  resource_manager_tags = {
+    environment = "staging"
+    application = "internal-tools"
+  }
+}
+```
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| project_id | The GCP project ID | `string` | n/a | yes |
+| machine_name | Name of the compute instance | `string` | n/a | yes |
+| machine_type | Machine type for the instance (e.g., e2-medium, n1-standard-1) | `string` | n/a | yes |
+| zone | The zone where the instance will be created | `string` | n/a | yes |
+| image | The image from which to initialize the boot disk | `string` | n/a | yes |
+| network | The VPC network to attach the instance to | `string` | n/a | yes |
+| subnetwork | The subnetwork to attach the instance to | `string` | n/a | yes |
+| boot_disk_size | Size of the boot disk in GB | `number` | `10` | no |
+| boot_disk_type | Type of boot disk (pd-standard, pd-ssd, pd-balanced) | `string` | `"pd-balanced"` | no |
+| data_disks | List of data disks to create and attach. Leave empty/null to skip data disk creation | `list(object({name=string, type=string, size=number}))` | `null` | no |
+| network_ip | Private IP address to assign to the instance | `string` | `null` | no |
+| enable_public_ip | Enable public IP address for the instance | `bool` | `false` | no |
+| network_tier | Network tier for public IP (PREMIUM or STANDARD) | `string` | `"PREMIUM"` | no |
+| network_tags | Network tags to apply to the instance. Leave empty to skip | `list(string)` | `[]` | no |
+| resource_manager_tags | Resource manager tags to apply to the instance. Leave empty to skip | `map(string)` | `{}` | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| instance_id | The ID of the compute instance |
+| instance_name | The name of the compute instance |
+| instance_self_link | The self link of the compute instance |
+| instance_zone | The zone of the compute instance |
+| instance_private_ip | The private IP address of the compute instance |
+| instance_public_ip | The public IP address of the compute instance (null if not enabled) |
+| data_disks | Map of data disk names to their details (empty if none created) |
+
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 1.5.0 |
+| google | >= 7.0.0, < 8.0.0 |
+| google-beta | >= 7.0.0, < 8.0.0 |
+
+## Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for version history and changes.
