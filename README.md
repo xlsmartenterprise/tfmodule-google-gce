@@ -12,6 +12,7 @@ A Terraform module for creating and managing Google Compute Engine (GCE) instanc
 - **Resource Tagging**: Support for both network tags (firewall rules) and resource manager tags (organization)
 - **Dynamic Resource Creation**: Intelligent conditional creation of resources based on configuration
 - **Comprehensive Outputs**: Access to instance details, IP addresses, and data disk information
+- **Drift Prevention**: Built-in lifecycle rules to ignore operational metadata changes (SSH keys, OS Config, and serial port access)
 
 ## Usage
 

@@ -65,7 +65,9 @@ resource "google_compute_instance" "this" {
 
   lifecycle {
     ignore_changes = [
-      metadata["ssh-keys"]
+      metadata["ssh-keys"],
+      metadata["enable-osconfig"],
+      metadata["serial-port-enable"],
     ]
   }
 }
